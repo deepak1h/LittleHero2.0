@@ -1,0 +1,336 @@
+/*LITTLE HERO WIRELESS
+   
+LITTLE HERO code for normal LITTLE HERO Modes using a mode switch
+
+  *Mode 1: Obstacle avoidance mode using Ultrasonic sensor
+  *Mode 2: Light Following mode using LDR Sensors
+  *Mode 3: Scared Mode using Ultrasonic sensors
+  *Mode 4: I'll Follow you but dont touch me mode using ultrasonic sensors
+  
+   USB + Bluetooth version
+   Author: Be Cre8v
+   WWW.BECRE8V.COM
+   
+   left motor=2,4
+   Left Motor enable=3
+   
+   Right motor=7,8
+   Right Motor enable=6
+
+   Mode switch=13
+   
+   Ultrasonic trig pin=5
+              echo pin=12
+              
+   RGB led    blue=A0
+              green=A1
+              red=A2
+              
+   Left LDR=A6
+   Right LDR=A7
+   
+   Left attachments=9
+                    10 
+                    11
+                    
+   Right aattachments=A3
+                      A4
+                      A5
+*/
+   
+int mode = 13;
+int ldr_right = 0;
+int ldr_left = 0;
+
+char BluetoothData;
+int button = 1;
+
+//motors
+//left motor
+int left1 = 2;
+int left2 = 4;
+int left_en = 3;
+
+//right motor
+int right1 = 7;
+int right2 = 8;
+int right_en = 6;
+
+//Ultrasonic
+int trigPin = 12;
+int echoPin = 5;
+
+//leds
+int led1 = A3;//blue
+int led2 = A4;//green
+int led3 = A5;//red
+
+//variables
+int count = 0;
+int i = 0;
+int a;
+
+long distance_front, duration_front;
+
+void forward()
+{
+  analogWrite(left_en, 1023);
+  analogWrite(right_en, 1023);
+  digitalWrite(left1, HIGH);
+  digitalWrite(left2, LOW);
+  digitalWrite(right1, HIGH);
+  digitalWrite(right2, LOW);
+}
+
+void left()
+{
+  analogWrite(left_en, 1023);
+  analogWrite(right_en, 1023);
+  digitalWrite(left1, LOW);
+  digitalWrite(left2, HIGH);
+  digitalWrite(right1, HIGH);
+  digitalWrite(right2, LOW);
+}
+
+void right()
+{
+  analogWrite(left_en, 1023);
+  analogWrite(right_en, 1023);
+  digitalWrite(left1, HIGH);
+  digitalWrite(left2, LOW);
+  digitalWrite(right1, LOW);
+  digitalWrite(right2, HIGH);
+}
+
+void soft_left()
+{
+  analogWrite(left_en, 200);
+  analogWrite(right_en, 170);
+  digitalWrite(left1, HIGH);
+  digitalWrite(left2, LOW);
+  digitalWrite(right1, HIGH);
+  digitalWrite(right2, LOW);
+}
+
+void soft_right()
+{
+  analogWrite(left_en, 170);
+  analogWrite(right_en, 200);
+  digitalWrite(left1, HIGH);
+  digitalWrite(left2, LOW);
+  digitalWrite(right1, HIGH);
+  digitalWrite(right2, LOW);
+}
+
+void brake()
+{
+  analogWrite(left_en, 0);
+  analogWrite(right_en, 0);
+  digitalWrite(left1, LOW);
+  digitalWrite(left2, LOW);
+  digitalWrite(right1, LOW);
+  digitalWrite(right2, LOW);
+}
+
+void back()
+{ analogWrite(left_en, 1023);
+  analogWrite(right_en, 1023);
+  digitalWrite(left1, LOW);
+  digitalWrite(left2, HIGH);
+  digitalWrite(right1, LOW);
+  digitalWrite(right2, HIGH);
+}
+
+void ultrasonic()
+{
+  Serial.println("ultrasonic");
+  analogWrite(led1, 0);
+  analogWrite(led2, 0);
+  analogWrite(led3, 1023);
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, LOW);
+
+  duration_front = pulseIn(echoPin, HIGH);
+  distance_front = duration_front / 29 / 2;
+  Serial.println("front ");
+  Serial.print(distance_front);
+
+  if (distance_front <= 20)
+  {
+    left();
+    delay(120);
+  }
+
+  else
+  {
+    forward();
+  }
+  delay(10);
+}
+
+void ldr()
+{
+  Serial.println("LDR");
+  analogWrite(led1, 1023);
+  analogWrite(led2, 0);
+  analogWrite(led3, 0);
+
+  ldr_left = analogRead(A6);
+  ldr_right = analogRead(A7);
+
+  Serial.print("\nleft\t");
+  Serial.print(ldr_left);
+  Serial.print("\tright\t");
+  Serial.print(ldr_right);
+
+  if (ldr_left > 250 && ldr_right > 250)
+  {
+    forward();
+    Serial.print("F");
+  }
+
+  if (ldr_left < 250 && ldr_right > 250)
+  {
+    soft_left();
+    Serial.print("R");
+  }
+
+  if (ldr_left > 250 && ldr_right < 250)
+  {
+    soft_right();
+    Serial.print("L");
+  }
+  
+  if (ldr_left < 250 && ldr_right < 250)
+  {
+    brake();
+    Serial.print("B");
+  }
+}
+
+void crazy()
+{
+  Serial.println("crazy");
+  analogWrite(led1, 0);
+  analogWrite(led2, 1023);
+  analogWrite(led3, 0);
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, LOW);
+
+  duration_front = pulseIn(echoPin, HIGH);
+  distance_front = duration_front / 29 / 2;
+  Serial.print("front ");
+  Serial.print(distance_front);
+
+  if (distance_front < 40 && distance_front > 25)
+  { forward();
+    delay(50);
+  }
+  else if (distance_front < 25 && distance_front > 10)
+  {
+    back();
+    delay(50);
+  }
+  else if (distance_front < 10)
+  {
+    left();
+    delay(120);
+  }
+  else if (distance_front > 40)
+  {
+    brake();
+    delay(50);
+  }
+}
+
+void scared()
+{
+  Serial.println("scared");
+  analogWrite(led1, 0);
+  analogWrite(led2, 1023);
+  analogWrite(led3, 1023);
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, LOW);
+
+  duration_front = pulseIn(echoPin, HIGH);
+  distance_front = duration_front / 29 / 2;
+
+  if (distance_front < 40)
+  {
+    Serial.print("i M SCARED ");
+    left();
+    delay(60);
+    right();
+    delay(60);
+    back();
+    delay(120);
+    brake();
+  
+  }
+}
+
+void setup() {
+  Serial.begin(57600);
+  pinMode(A6, INPUT); //ldr left
+  pinMode(A7, INPUT); //ldr right
+
+  pinMode(right1, OUTPUT); //right motor
+  pinMode(right2, OUTPUT);
+  pinMode(right_en, OUTPUT);
+
+  pinMode(left1, OUTPUT); //left motor
+  pinMode(left2, OUTPUT);
+  pinMode(left_en, OUTPUT);
+
+  pinMode(trigPin, OUTPUT);//ultrasonic
+  pinMode(echoPin, INPUT);
+
+  pinMode(mode, INPUT);
+
+  pinMode(led1, OUTPUT); //RGB LED
+  pinMode(led2, OUTPUT);
+  pinMode(led3, OUTPUT);
+ 
+  a = digitalRead(mode);
+
+}
+
+void loop() {
+
+
+  while (a == digitalRead(mode))
+  {
+    if (button == 1)
+    {
+      ultrasonic();
+    }
+    if (button == 2)
+    {
+      ldr();
+    }
+    if (button == 3)
+    {
+      crazy();
+    }
+    if (button == 4)
+    {
+      scared();
+    }
+  }
+  button++;
+  a = !a;
+  if (button > 4)
+    button = 1;
+}
